@@ -1,0 +1,11 @@
+{
+  "title": "로봇 & 매니퓰레이터 관제 대시보드",
+  "panels": [
+    { "id": 1, "title": "배터리 상태", "type": "gauge" },
+    { "id": 2, "title": "속도", "type": "timeseries" },
+    { "id": 3, "title": "조인트 각도", "type": "timeseries" },
+    { "id": 4, "title": "End-effector 위치", "type": "timeseries" },
+    { "id": 5, "title": "장애물 거리", "type": "timeseries" },
+    { "id": 6, "title": "이벤트 로그", "type": "table" }
+  ]
+}

@@ -1,0 +1,91 @@
+import time
+import random
+from datetime import datetime
+from influxdb_client import InfluxDBClient, Point, WritePrecision
+from influxdb_client.client.write_api import SYNCHRONOUS  # 추가
+
+# === InfluxDB 연결 정보 ===
+token = "my-token"
+org = "my-org"
+bucket = "my-bucket"
+url = "http://localhost:8086"
+
+
+# =====================================
+
+# 원본
+client = InfluxDBClient(url=url, token=token, org=org)
+# write_api = client.write_api(write_options=None)
+
+# # 수정
+# client = InfluxDBClient(url=url, token=token, org=org)
+write_api = client.write_api(write_options=SYNCHRONOUS)
+
+# === 더미 데이터 생성 함수 ===
+def generate_robot_data(robot_id="UGV01"):
+    return (
+        Point("robot_status")
+        .tag("robot", robot_id)
+        .field("gps_lat", random.uniform(35.0, 37.0))
+        .field("gps_lon", random.uniform(127.0, 129.0))
+        .field("connected", random.choice([0, 1]))
+        .field("moving", random.choice([0, 1]))
+        .field("speed", random.uniform(0, 5))
+        .field("battery_voltage", random.uniform(20.0, 28.0))
+        .field("battery_percent", random.uniform(20, 80))
+        .field("signal_strength", random.uniform(0, 100))
+        .field("obstacle_distance", random.uniform(0.2, 10.0))
+        .field("sensor_error", random.choice([0, 1]))
+        .time(datetime.utcnow(), WritePrecision.NS)
+    )
+
+def generate_manipulator_data(arm_id="ARM01"):
+    return (
+        Point("manipulator_status")
+        .tag("arm", arm_id)
+        .field("connected", random.choice([0, 1]))
+        .field("mode", random.choice(["idle", "auto", "manual"]))
+        .field("joint1_angle", random.uniform(-180, 180))
+        .field("joint2_angle", random.uniform(-180, 180))
+        .field("joint3_angle", random.uniform(-180, 180))
+        .field("end_effector_x", random.uniform(0, 1))
+        .field("end_effector_y", random.uniform(0, 1))
+        .field("end_effector_z", random.uniform(0, 1))
+        .field("load", random.uniform(0, 15))
+        .field("system_status", random.choice(["normal", "warning", "error"]))
+        .time(datetime.utcnow(), WritePrecision.NS)
+    )
+
+def generate_event_log():
+    return (
+        Point("event_log")
+        .field("event_type", random.choice(["info", "warning", "error"]))
+        .field(
+            "message",
+            random.choice([
+                "시스템 정상 동작",
+                "배터리 부족",
+                "네트워크 연결 끊김",
+                "장애물 감지",
+                "센서 이상 발생",
+            ])
+        )
+        .time(datetime.utcnow(), WritePrecision.NS)
+    )
+
+# === 실행 루프 ===
+print("더미 데이터 전송 시작...")
+try:
+    while True:
+        robot_point = generate_robot_data()
+        arm_point = generate_manipulator_data()
+        event_point = generate_event_log()
+
+        write_api.write(bucket=bucket, org=org, record=[robot_point, arm_point, event_point])
+        print(f"Data written at {datetime.utcnow()}")
+
+        time.sleep(1)
+except KeyboardInterrupt:
+    print("데이터 전송 중지")
+finally:
+    client.close()
